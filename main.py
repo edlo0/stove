@@ -3,7 +3,7 @@ from tkinter import ttk
 
 import clr
 clr.AddReference("LibreHardwareMonitorLib")
-from LibreHardwareMonitor import Hardware # pyright: ignore[reportMissingImports]
+from LibreHardwareMonitor import Hardware
 
 class UpdateVisitor(Hardware.IVisitor):
     __namespace__ = "Stove"
@@ -29,6 +29,33 @@ user.IsMemoryEnabled = True
 user.IsNetworkEnabled = True
 user.IsStorageEnabled = True
 user.Open()
+user.Accept(UpdateVisitor())
+
+array = {}
+
+def updateArray():
+    for hw in user.Hardware:
+        hwType = str(hw.HardwareType).lower()
+        if "gpu" in hwType: hwType ="gpu"
+        array[hwType] = {"name": hw.Name}
+
+        for sensor in hw.Sensors:
+            name = sensor.Name
+            sType = sensor.SensorType
+
+            if (name == "Core Average") or (name == "GPU Core" and sType == "Temperature"): # temperature
+                array[hwType]["temp"] = str(round(sensor.Value, 1))
+            if (name == "CPU Total") or (name == "GPU Core" and sType == "Load"): # usage
+                array[hwType]["usage"] = str(round(sensor.Value, 1))
+
+updateArray()
+print(array)
+
+"""
+cpuName = None
+gpuName = None
+
+
 
 def getCpuName():
     for hw in user.Hardware:
@@ -39,9 +66,16 @@ def getGpuName():
     for hw in user.Hardware:
         if hw.HardwareType.value__ == 4:
             return hw.Name
+        
+for hw in user.Hardware:
+        if hw.HardwareType.value__ == 4:
+            for i in hw.Sensors:
+                print(i.Name, " : ", i.Value)
+"""
 
 main = Tk()
 main.title("Stove")
+main.geometry("400x150")
 
 frame = ttk.Frame(main)
 frame.grid(column=0, row=0)
