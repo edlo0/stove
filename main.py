@@ -23,18 +23,13 @@ class UpdateVisitor(Hardware.IVisitor): # from repo pyhardwaremonitor's example 
         pass
 
 user = Hardware.Computer()
-user.IsCpuEnabled = True
 user.IsGpuEnabled = True
-user.IsNetworkEnabled = True
-user.IsStorageEnabled = True
 user.Open()
 user.Accept(UpdateVisitor())
 
 print(pu.cpu_percent())
 
 array = {}
-def getVal(sensor: any, decimalPlaces: int=0):
-    return str(round(sensor.Value, decimalPlaces))
 
 df = "TkDefaultFont 18 bold"
 
@@ -71,6 +66,11 @@ gpuLoadFrame.grid(column=0, row=2, sticky=(E, W))
 gpuLoad = StringVar()
 ttk.Label(gpuLoadFrame, textvariable=gpuLoad, font=df).grid(column=0, row=0)
 
+bottomBar = ttk.Frame()
+bottomBar.grid(column=1, row=1, columnspan=2)
+button1 = ttk.Button(text="asdasd")
+button1.grid(column=0, row=0)
+
 for x in frame.winfo_children():
     x['padding'] = 10
     
@@ -81,15 +81,37 @@ def updateSensors():
         user.Accept(UpdateVisitor())
         sleep(1)
 
+"""
+psutil:
+-all cpu info
+-all memory info
+-all storage info
+-all network info
+librehardwaremonitorlib:
+-all gpu info
+"""
+
+def rnd(num, places) -> str:
+    return str(round(num, places))
+
 def updateArray() -> None:
+    card = user.Hardware[0]
+    array["gpu"] = {}
+    for sensor in card.Sensors:
+        sName = str(sensor.Name)
+        sType = str(sensor.SensorType)
+        if ("core" in sName and sType == "Temperature"):
+            array["gpu"]["temp"] = rnd(sensor.Value, 1)
+            print(array["gpu"]["temp"])
+
+
     for hw in user.Hardware:
         hwType = str(hw.HardwareType).lower()
         if "gpu" in hwType: hwType ="gpu"
         array[hwType] = {"name": hw.Name}
 
         for sensor in hw.Sensors:
-            sName = str(sensor.Name)
-            sType = str(sensor.SensorType)
+            
 
             #temp ----
             if (sName == "Core Average") or \
@@ -137,6 +159,7 @@ def setStatic() -> None:
 setStatic()
 
 def setInfo() -> None:
+    cpuTemp.set()
     gpuTemp.set(array["gpu"]["temp"])
 
 def refresh() -> None:
