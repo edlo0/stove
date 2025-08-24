@@ -1,14 +1,12 @@
+from time import sleep
+import psutil as pu
 from tkinter import *
 from tkinter import ttk
-from time import sleep
-import threading
-
+import sv_ttk
 import clr
+
 clr.AddReference("LibreHardwareMonitorLib")
 from LibreHardwareMonitor import Hardware # type: ignore
-
-import psutil as pu
-
 class UpdateVisitor(Hardware.IVisitor): # from repo pyhardwaremonitor's example code
     __namespace__ = "Stove"
     def VisitComputer(self, computer):
@@ -21,59 +19,66 @@ class UpdateVisitor(Hardware.IVisitor): # from repo pyhardwaremonitor's example 
         pass
     def VisitSensor(self, sensor):
         pass
-
 user = Hardware.Computer()
+#user.IsCpuEnabled = True
 user.IsGpuEnabled = True
 user.Open()
 user.Accept(UpdateVisitor())
 
-print(pu.cpu_percent())
-
+for hardware in user.Hardware:
+    print(f"Hardware: {hardware.Name}")
+    for sensor in hardware.Sensors:
+        print(f"\tSensor: {sensor.Name}, value: {sensor.Value} TYPE: {sensor.SensorType}")
 array = {}
-
-df = "TkDefaultFont 18 bold"
 
 main = Tk()
 main.title("Stove")
-main.option_add('*tearOff', FALSE)
+main.geometry("550x300")
+main.minsize(width=375, height=200)
+main.maxsize(width=550, height=300)
+main.columnconfigure(0, weight=1)
+main.rowconfigure(0, weight=1)
 
 frame = ttk.Frame(main)
-frame.grid(column=0, row=0)
+frame.grid(column=0, row=0, sticky=(N, E, W, S))
+frame.columnconfigure(0, weight=1)
+frame.columnconfigure(1, weight=1)
+frame.rowconfigure(0, weight=1)
 
 cpuFrame = ttk.Labelframe(frame, text="CPU")
-cpuFrame.grid(column=0, row=0)
-cpuName = StringVar()
-ttk.Label(cpuFrame, textvariable=cpuName).grid(column=0, row=0)
+cpuFrame.grid(column=0, row=0, sticky=(N, E, W, S))
+cpuFrame.columnconfigure(0, weight=1)
+
+cpuLoadFrame = ttk.Labelframe(cpuFrame, text="Load")
+cpuLoadFrame.grid(column=0, row=0, sticky=(E, W))
+cpuLoadFrame.columnconfigure(1, weight=1)
+cpuLoadPercentage = DoubleVar()
+ttk.Progressbar(cpuLoadFrame, length=150, mode="determinate", variable=cpuLoadPercentage, orient="horizontal").grid(column=0, row=0)
+ttk.Label(cpuLoadFrame, textvariable=cpuLoadPercentage, font="TkDefaultFont 18 bold").grid(column=1, row=0)
+
 cpuTempFrame = ttk.Labelframe(cpuFrame, text="Temperature")
 cpuTempFrame.grid(column=0, row=1, sticky=(E, W))
 cpuTemp = StringVar()
-ttk.Label(cpuTempFrame, textvariable=cpuTemp, font=df).grid(column=0, row=0)
-cpuLoadFrame = ttk.Labelframe(cpuFrame, text="Load")
-cpuLoadFrame.grid(column=0, row=2, sticky=(E, W))
-cpuLoad = StringVar()
-ttk.Label(cpuLoadFrame, textvariable=cpuLoad, font=df).grid(column=0, row=0)
+ttk.Label(cpuTempFrame, textvariable=cpuTemp, font="TkDefaultFont 18 bold").grid(column=0, row=0)
 
 gpuFrame = ttk.Labelframe(frame, text="GPU")
-gpuFrame.grid(column=1, row=0)
-gpuName = StringVar()
-ttk.Label(gpuFrame, textvariable=gpuName).grid(column=0, row=0)
+gpuFrame.grid(column=1, row=0, sticky=(N, E, W, S))
+gpuFrame.columnconfigure(0, weight=1)
+
+gpuLoadFrame = ttk.Labelframe(gpuFrame, text="Load")
+gpuLoadFrame.grid(column=0, row=0, sticky=(E, W))
+gpuLoadFrame.columnconfigure(1, weight=1)
+gpuLoadPercentage = DoubleVar()
+ttk.Progressbar(gpuLoadFrame, length=100, mode="determinate", variable=gpuLoadPercentage, orient="horizontal").grid(column=0, row=0)
+ttk.Label(gpuLoadFrame, textvariable=gpuLoadPercentage, font="TkDefaultFont 18 bold").grid(column=1, row=0)
+
 gpuTempFrame = ttk.Labelframe(gpuFrame, text="Temperature")
 gpuTempFrame.grid(column=0, row=1, sticky=(E, W))
 gpuTemp = StringVar()
-ttk.Label(gpuTempFrame, textvariable=gpuTemp, font=df).grid(column=0, row=0)
-gpuLoadFrame = ttk.Labelframe(gpuFrame, text="Load")
-gpuLoadFrame.grid(column=0, row=2, sticky=(E, W))
-gpuLoad = StringVar()
-ttk.Label(gpuLoadFrame, textvariable=gpuLoad, font=df).grid(column=0, row=0)
-
-bottomBar = ttk.Frame()
-bottomBar.grid(column=1, row=1, columnspan=2)
-button1 = ttk.Button(text="asdasd")
-button1.grid(column=0, row=0)
+ttk.Label(gpuTempFrame, textvariable=gpuTemp, font="TkDefaultFont 18 bold").grid(column=0, row=0)
 
 for x in frame.winfo_children():
     x['padding'] = 10
-    
 
 def updateSensors():
     while True:
@@ -81,86 +86,59 @@ def updateSensors():
         user.Accept(UpdateVisitor())
         sleep(1)
 
-"""
-psutil:
--all cpu info
--all memory info
--all storage info
--all network info
-librehardwaremonitorlib:
--all gpu info
-"""
-
-def rnd(num, places) -> str:
+def rnd(num, places: int = 0) -> str:
     return str(round(num, places))
 
 def updateArray() -> None:
+    #GPU --------
     card = user.Hardware[0]
     array["gpu"] = {}
     for sensor in card.Sensors:
         sName = str(sensor.Name)
         sType = str(sensor.SensorType)
-        if ("core" in sName and sType == "Temperature"):
+        if (sName == "GPU Core" and sType == "Temperature"):
             array["gpu"]["temp"] = rnd(sensor.Value, 1)
-            print(array["gpu"]["temp"])
+        elif (sName == "GPU Core" and sType == "Load"):
+            array["gpu"]["loadPercentage"] = round(sensor.Value, 1)
+        elif (sName == "GPU Core" and sType == "Clock"):
+            array["gpu"]["clock"] = sensor.Value
 
+    #CPU ---------
+    array["cpu"] = {
+        "name": "placeholder",
+        "temp": "1 zorbillion",
+        "loadPercentage": pu.cpu_percent(interval=None),
+    }
 
-    for hw in user.Hardware:
-        hwType = str(hw.HardwareType).lower()
-        if "gpu" in hwType: hwType ="gpu"
-        array[hwType] = {"name": hw.Name}
+    #MEMORY ------------
+    mem = pu.virtual_memory()
+    array["memory"] = {
+        "total": round(mem.total / (1024.0 ** 3.0)),
+        "loadPercentage": mem.percent
+    }
 
-        for sensor in hw.Sensors:
-            
+    #STORAGE ----------
+    #for disk in pu.disk_partitions:
 
-            #temp ----
-            if (sName == "Core Average") or \
-            (sName == "GPU Core" and sType == "Temperature"): 
-                array[hwType]["temp"] = getVal(sensor, 1)
-
-            #usagePercentage ----
-            elif (sName == "CPU Total") or \
-            (sName == "GPU Core" and sType == "Load") or \
-            (sName == "Memory Total"):
-                array[hwType]["usagePercentage"] = getVal(sensor, 1)
-                print("percent: " + array[hwType]["usagePercentage"] + " | " + sType +sName)
-
-            #memoryPercentage ----
-            elif (sName == "Gpu Core") or \
-            (sName == "Memory" and sType == "Load"):
-                array[hwType]["memoryPercentage"] = getVal(sensor, 1)
-            
-            #memorySpecific ----
-            elif (sName == "Memory Used"):
-                array[hwType]["memorySpecific"] = getVal(sensor, 1)
-
-            #
-            
     #del array["gpu"]
     # if "gpu" not in array:
     #     array["gpu"] = {
     #         "name": "No GPU",
     #         "temp": "N/A",
-    #         "usage": "N/A"
+    #         "loadPercentage": "N/A"
     #     }
-    mem = pu.virtual_memory()
-
-    array["cpu"] = {
-        "loadPercentage": pu.cpu_percent(interval=None),
-    }
-    array["memory"] = {
-        "total": round(mem.total / (1024.0 ** 3.0)),
-        "loadPercentage": mem.percent
-    }
+    print(array)
 updateArray()
 
-def setStatic() -> None:
-    gpuName.set(array["gpu"]["name"])
-setStatic()
+# def setStatic() -> None:
+#     #cpuName.set(array["cpu"]["name"])
+#     gpuName.set(array["gpu"]["name"])
+# setStatic()
 
 def setInfo() -> None:
-    cpuTemp.set()
+    cpuTemp.set(array["cpu"]["temp"])
     gpuTemp.set(array["gpu"]["temp"])
+    gpuLoadPercentage.set(array["gpu"]["loadPercentage"])
 
 def refresh() -> None:
     updateArray()
@@ -170,4 +148,5 @@ def refresh() -> None:
     main.after(1000, refresh)
 
 main.after(1000, refresh)
+sv_ttk.use_dark_theme()
 main.mainloop()
