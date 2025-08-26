@@ -20,7 +20,7 @@ class UpdateVisitor(Hardware.IVisitor): # from repo pyhardwaremonitor's example 
     def VisitSensor(self, sensor):
         pass
 user = Hardware.Computer()
-#user.IsCpuEnabled = True
+user.IsCpuEnabled = True
 user.IsGpuEnabled = True
 user.Open()
 user.Accept(UpdateVisitor())
@@ -53,6 +53,7 @@ cpuLoadFrame = ttk.Labelframe(cpuFrame, text="Load")
 cpuLoadFrame.grid(column=0, row=0, sticky=(E, W))
 cpuLoadFrame.columnconfigure(1, weight=1)
 cpuLoadPercentage = DoubleVar()
+cpuLoadText = StringVar()
 ttk.Progressbar(cpuLoadFrame, length=150, mode="determinate", variable=cpuLoadPercentage, orient="horizontal").grid(column=0, row=0)
 ttk.Label(cpuLoadFrame, textvariable=cpuLoadPercentage, font="TkDefaultFont 18 bold").grid(column=1, row=0)
 
@@ -60,6 +61,11 @@ cpuTempFrame = ttk.Labelframe(cpuFrame, text="Temperature")
 cpuTempFrame.grid(column=0, row=1, sticky=(E, W))
 cpuTemp = StringVar()
 ttk.Label(cpuTempFrame, textvariable=cpuTemp, font="TkDefaultFont 18 bold").grid(column=0, row=0)
+
+cpuClockFrame = ttk.Labelframe(cpuFrame, text="Clock")
+cpuClockFrame.grid(column=0, row=2, sticky=(E, W))
+cpuClock = StringVar()
+ttk.Label(cpuClockFrame, textvariable=cpuClock, font="TkDefaultFont 18 bold").grid(column=0, row=0)
 
 gpuFrame = ttk.Labelframe(frame, text="GPU")
 gpuFrame.grid(column=1, row=0, sticky=(N, E, W, S))
@@ -69,6 +75,7 @@ gpuLoadFrame = ttk.Labelframe(gpuFrame, text="Load")
 gpuLoadFrame.grid(column=0, row=0, sticky=(E, W))
 gpuLoadFrame.columnconfigure(1, weight=1)
 gpuLoadPercentage = DoubleVar()
+gpuLoadText = StringVar()
 ttk.Progressbar(gpuLoadFrame, length=100, mode="determinate", variable=gpuLoadPercentage, orient="horizontal").grid(column=0, row=0)
 ttk.Label(gpuLoadFrame, textvariable=gpuLoadPercentage, font="TkDefaultFont 18 bold").grid(column=1, row=0)
 
@@ -76,6 +83,11 @@ gpuTempFrame = ttk.Labelframe(gpuFrame, text="Temperature")
 gpuTempFrame.grid(column=0, row=1, sticky=(E, W))
 gpuTemp = StringVar()
 ttk.Label(gpuTempFrame, textvariable=gpuTemp, font="TkDefaultFont 18 bold").grid(column=0, row=0)
+
+gpuClockFrame = ttk.Labelframe(gpuFrame, text="Clock")
+gpuClockFrame.grid(column=0, row=2, sticky=(E, W))
+gpuClock = StringVar()
+ttk.Label(gpuClockFrame, textvariable=gpuClock, font="TkDefaultFont 18 bold").grid(column=0, row=0)
 
 for x in frame.winfo_children():
     x['padding'] = 10
@@ -86,26 +98,16 @@ def updateSensors():
         user.Accept(UpdateVisitor())
         sleep(1)
 
-def rnd(num, places: int = 0) -> str:
-    return str(round(num, places))
-
 def updateArray() -> None:
+    cpuHW = user.Hardware[0]
+    gpuHW = user.Hardware[1]
     #GPU --------
-    card = user.Hardware[0]
-    array["gpu"] = {}
-    for sensor in card.Sensors:
-        sName = str(sensor.Name)
-        sType = str(sensor.SensorType)
-        if (sName == "GPU Core" and sType == "Temperature"):
-            array["gpu"]["temp"] = rnd(sensor.Value, 1)
-        elif (sName == "GPU Core" and sType == "Load"):
-            array["gpu"]["loadPercentage"] = round(sensor.Value, 1)
-        elif (sName == "GPU Core" and sType == "Clock"):
-            array["gpu"]["clock"] = sensor.Value
+    array["gpu"] = {
+        "name": gpuHW.Name
+    }
 
     #CPU ---------
     array["cpu"] = {
-        "name": "placeholder",
         "temp": "1 zorbillion",
         "loadPercentage": pu.cpu_percent(interval=None),
     }
@@ -119,6 +121,28 @@ def updateArray() -> None:
 
     #STORAGE ----------
     #for disk in pu.disk_partitions:
+
+    #librehardwaremonitorlib ----------
+    cpuClocks = []
+    for sensor in cpuHW.Sensors:
+        sName = str(sensor.Name)
+        sType = str(sensor.SensorType)
+        if (sName == "Core Average" and sType == "Temperature"):
+            array["cpu"]["temp"] = round(sensor.Value, 1)
+        elif (sName == "CPU Total" and sType == "Load"):
+            array["cpu"]["loadPercentage"] = round(sensor.Value, 1)
+        elif ("CPU Core" in sName and sType == "Clock"):
+            cpuClocks.append(sensor.Value)
+    for sensor in gpuHW.Sensors:
+        sName = str(sensor.Name)
+        sType = str(sensor.SensorType)
+        if (sName == "GPU Core" and sType == "Temperature"):
+            array["gpu"]["temp"] = round(sensor.Value, 1)
+        elif (sName == "GPU Core" and sType == "Load"):
+            array["gpu"]["loadPercentage"] = round(sensor.Value, 1)
+        elif (sName == "GPU Core" and sType == "Clock"):
+            array["gpu"]["clock"] = round(sensor.Value)
+    array["cpu"]["clock"] = round(sum(cpuClocks) / len(cpuClocks))
 
     #del array["gpu"]
     # if "gpu" not in array:
@@ -136,9 +160,14 @@ updateArray()
 # setStatic()
 
 def setInfo() -> None:
-    cpuTemp.set(array["cpu"]["temp"])
-    gpuTemp.set(array["gpu"]["temp"])
+    cpuTemp.set(f"{array["cpu"]["temp"]} C") 
+    gpuTemp.set(f"{array["gpu"]["temp"]} C")
+    cpuLoadPercentage.set(array["cpu"]["loadPercentage"])
     gpuLoadPercentage.set(array["gpu"]["loadPercentage"])
+    cpuLoadText.set(f"{array["cpu"]["loadPercentage"]}%")
+    gpuLoadText.set(f"{array["gpu"]["loadPercentage"]}%")
+    cpuClock.set(f"{array["cpu"]["clock"]} MHz")
+    gpuClock.set(f"{array["gpu"]["clock"]} MHz")
 
 def refresh() -> None:
     updateArray()
