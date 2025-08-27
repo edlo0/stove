@@ -76,6 +76,11 @@ cpuClockFrame.grid(column=0, row=2, sticky=(E, W))
 cpuClock = StringVar()
 ttk.Label(cpuClockFrame, textvariable=cpuClock, font="TkDefaultFont 18 bold").grid(column=0, row=0)
 
+cpuPowerFrame = ttk.Labelframe(cpuFrame, text="Power")
+cpuPowerFrame.grid(column=0, row=3, sticky=(E, W))
+cpuPower = StringVar()
+ttk.Label(cpuPowerFrame, textvariable=cpuPower, font="TkDefaultFont 18 bold").grid(column=0, row=0)
+
 gpuFrame = ttk.Labelframe(frame, text="GPU")
 gpuFrame.grid(column=1, row=0, sticky=(N, E, W, S))
 gpuFrame.columnconfigure(0, weight=1)
@@ -98,6 +103,11 @@ gpuClockFrame.grid(column=0, row=2, sticky=(E, W))
 gpuClock = StringVar()
 ttk.Label(gpuClockFrame, textvariable=gpuClock, font="TkDefaultFont 18 bold").grid(column=0, row=0)
 
+gpuPowerFrame = ttk.Labelframe(gpuFrame, text="Power")
+gpuPowerFrame.grid(column=0, row=3, sticky=(E, W))
+gpuPower = StringVar()
+ttk.Label(gpuPowerFrame, textvariable=gpuPower, font="TkDefaultFont 18 bold").grid(column=0, row=0)
+
 for x in frame.winfo_children():
     x['padding'] = 10
 
@@ -119,12 +129,14 @@ def updateArray() -> None:
     for sensor in cpuHW.Sensors:
         sName = str(sensor.Name)
         sType = str(sensor.SensorType)
-        if (sName == "Core Average" and sType == "Temperature"):
-            array["cpu"]["temp"] = round(sensor.Value, 1)
-        elif (sName == "CPU Total" and sType == "Load"):
+        if (sName == "CPU Total" and sType == "Load"):
             array["cpu"]["loadPercentage"] = round(sensor.Value, 1)
+        elif (sName == "Core Average" and sType == "Temperature"):
+            array["cpu"]["temp"] = round(sensor.Value, 1)
         elif ("CPU Core" in sName and sType == "Clock"):
             cpuClocks.append(sensor.Value)
+        elif (sName == "CPU Cores" and sType == "Power"):
+            array["cpu"]["power"] = round(sensor.Value, 1)
     array["cpu"]["clock"] = round(sum(cpuClocks) / len(cpuClocks)) # average clocks
 
     #GPU ----------
@@ -139,6 +151,8 @@ def updateArray() -> None:
                 array["gpu"]["loadPercentage"] = round(sensor.Value, 1)
             elif (sName == "GPU Core" and sType == "Clock"):
                 array["gpu"]["clock"] = round(sensor.Value)
+            elif (sName == "GPU Package" and sType == "Power"):
+                array["gpu"]["power"] = round(sensor.Value, 1)
 
     #MEMORY ------------
     mem = pu.virtual_memory()
@@ -166,6 +180,8 @@ def setInfo() -> None:
     gpuLoadText.set(f"{array["gpu"]["loadPercentage"]}%")
     cpuClock.set(f"{array["cpu"]["clock"]} MHz")
     gpuClock.set(f"{array["gpu"]["clock"]} MHz")
+    cpuPower.set(f"{array["cpu"]["power"]} W")
+    gpuPower.set(f"{array["gpu"]["power"]} W")
 
 def refresh() -> None:
     updateArray()
