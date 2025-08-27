@@ -107,9 +107,9 @@ def updateSensors():
         user.Accept(UpdateVisitor())
         sleep(1)
 
-# for i in user.Hardware:
-#     if "Gpu" in i.HardwareType:
-#         noGPU == False
+for i in user.Hardware:
+    if "Gpu" in str(i.HardwareType):
+        noGPU = False
 
 def updateArray() -> None:
     #CPU ---------
