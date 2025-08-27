@@ -158,8 +158,8 @@ updateArray()
 #setStatic()
 
 def setInfo() -> None:
-    cpuTemp.set(f"{array["cpu"]["temp"]} C") 
-    gpuTemp.set(f"{array["gpu"]["temp"]} C")
+    cpuTemp.set(f"{array["cpu"]["temp"]} °C") 
+    gpuTemp.set(f"{array["gpu"]["temp"]} °C")
     cpuLoadPercentage.set(array["cpu"]["loadPercentage"])
     gpuLoadPercentage.set(array["gpu"]["loadPercentage"])
     cpuLoadText.set(f"{array["cpu"]["loadPercentage"]}%")
