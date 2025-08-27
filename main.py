@@ -29,7 +29,16 @@ for hardware in user.Hardware:
     print(f"Hardware: {hardware.Name}")
     for sensor in hardware.Sensors:
         print(f"\tSensor: {sensor.Name}, value: {sensor.Value} TYPE: {sensor.SensorType}")
-array = {}
+array = {
+    "cpu": {},
+    "gpu": {
+        "temp": "Error",
+        "loadPercentage": -1.0,
+        "clock": "Error"
+    },
+    "memory": {}
+}
+noGPU = True
 
 main = Tk()
 main.title("Stove")
@@ -98,31 +107,14 @@ def updateSensors():
         user.Accept(UpdateVisitor())
         sleep(1)
 
+# for i in user.Hardware:
+#     if "Gpu" in i.HardwareType:
+#         noGPU == False
+
 def updateArray() -> None:
-    cpuHW = user.Hardware[0]
-    gpuHW = user.Hardware[1]
-    #GPU --------
-    array["gpu"] = {
-        "name": gpuHW.Name
-    }
-
     #CPU ---------
-    array["cpu"] = {
-        "temp": "1 zorbillion",
-        "loadPercentage": pu.cpu_percent(interval=None),
-    }
-
-    #MEMORY ------------
-    mem = pu.virtual_memory()
-    array["memory"] = {
-        "total": round(mem.total / (1024.0 ** 3.0)),
-        "loadPercentage": mem.percent
-    }
-
-    #STORAGE ----------
-    #for disk in pu.disk_partitions:
-
-    #librehardwaremonitorlib ----------
+    cpuHW = user.Hardware[0]
+    array["cpu"]["loadPercentage"] = pu.cpu_percent(interval=None)
     cpuClocks = []
     for sensor in cpuHW.Sensors:
         sName = str(sensor.Name)
@@ -133,31 +125,37 @@ def updateArray() -> None:
             array["cpu"]["loadPercentage"] = round(sensor.Value, 1)
         elif ("CPU Core" in sName and sType == "Clock"):
             cpuClocks.append(sensor.Value)
-    for sensor in gpuHW.Sensors:
-        sName = str(sensor.Name)
-        sType = str(sensor.SensorType)
-        if (sName == "GPU Core" and sType == "Temperature"):
-            array["gpu"]["temp"] = round(sensor.Value, 1)
-        elif (sName == "GPU Core" and sType == "Load"):
-            array["gpu"]["loadPercentage"] = round(sensor.Value, 1)
-        elif (sName == "GPU Core" and sType == "Clock"):
-            array["gpu"]["clock"] = round(sensor.Value)
-    array["cpu"]["clock"] = round(sum(cpuClocks) / len(cpuClocks))
+    array["cpu"]["clock"] = round(sum(cpuClocks) / len(cpuClocks)) # average clocks
 
-    #del array["gpu"]
-    # if "gpu" not in array:
-    #     array["gpu"] = {
-    #         "name": "No GPU",
-    #         "temp": "N/A",
-    #         "loadPercentage": "N/A"
-    #     }
+    #GPU ----------
+    if noGPU == False:
+        gpuHW = user.Hardware[1]
+        for sensor in gpuHW.Sensors:
+            sName = str(sensor.Name)
+            sType = str(sensor.SensorType)
+            if (sName == "GPU Core" and sType == "Temperature"):
+                array["gpu"]["temp"] = round(sensor.Value, 1)
+            elif (sName == "GPU Core" and sType == "Load"):
+                array["gpu"]["loadPercentage"] = round(sensor.Value, 1)
+            elif (sName == "GPU Core" and sType == "Clock"):
+                array["gpu"]["clock"] = round(sensor.Value)
+
+    #MEMORY ------------
+    mem = pu.virtual_memory()
+    array["memory"] = {
+        "total": round(mem.total / (1024.0 ** 3.0)),
+        "loadPercentage": mem.percent
+    }
+
+    #STORAGE ----------
+    #for disk in pu.disk_partitions:
     print(array)
 updateArray()
 
-# def setStatic() -> None:
-#     #cpuName.set(array["cpu"]["name"])
-#     gpuName.set(array["gpu"]["name"])
-# setStatic()
+#def setStatic() -> None:
+    #cpuName.set(array["cpu"]["name"])
+    #gpuName.set(array["gpu"]["name"])
+#setStatic()
 
 def setInfo() -> None:
     cpuTemp.set(f"{array["cpu"]["temp"]} C") 
