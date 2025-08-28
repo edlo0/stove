@@ -36,15 +36,17 @@ array = {
         "loadPercentage": -1.0,
         "clock": "Error"
     },
-    "memory": {}
+    "memory": {},
+    "disks": {}
 }
 noGPU = True
 
 main = Tk()
 main.title("Stove")
-main.geometry("550x300")
+#main.geometry("550x300")
+main.geometry("550x500")
 main.minsize(width=375, height=200)
-main.maxsize(width=550, height=300)
+#main.maxsize(width=550, height=300)
 main.columnconfigure(0, weight=1)
 main.rowconfigure(0, weight=1)
 
@@ -53,6 +55,9 @@ frame.grid(column=0, row=0, sticky=(N, E, W, S))
 frame.columnconfigure(0, weight=1)
 frame.columnconfigure(1, weight=1)
 frame.rowconfigure(0, weight=1)
+frame.rowconfigure(1, weight=1)
+
+# 10/10 variable names
 
 cpuFrame = ttk.Labelframe(frame, text="CPU")
 cpuFrame.grid(column=0, row=0, sticky=(N, E, W, S))
@@ -60,11 +65,12 @@ cpuFrame.columnconfigure(0, weight=1)
 
 cpuLoadFrame = ttk.Labelframe(cpuFrame, text="Load")
 cpuLoadFrame.grid(column=0, row=0, sticky=(E, W))
+cpuLoadFrame.columnconfigure(0, weight=1)
 cpuLoadFrame.columnconfigure(1, weight=1)
 cpuLoadPercentage = DoubleVar()
 cpuLoadText = StringVar()
 ttk.Progressbar(cpuLoadFrame, length=150, mode="determinate", variable=cpuLoadPercentage, orient="horizontal").grid(column=0, row=0)
-ttk.Label(cpuLoadFrame, textvariable=cpuLoadPercentage, font="TkDefaultFont 18 bold").grid(column=1, row=0)
+ttk.Label(cpuLoadFrame, textvariable=cpuLoadText, font="TkDefaultFont 18 bold").grid(column=1, row=0)
 
 cpuTempFrame = ttk.Labelframe(cpuFrame, text="Temperature")
 cpuTempFrame.grid(column=0, row=1, sticky=(E, W))
@@ -87,11 +93,12 @@ gpuFrame.columnconfigure(0, weight=1)
 
 gpuLoadFrame = ttk.Labelframe(gpuFrame, text="Load")
 gpuLoadFrame.grid(column=0, row=0, sticky=(E, W))
+gpuLoadFrame.columnconfigure(0, weight=1)
 gpuLoadFrame.columnconfigure(1, weight=1)
 gpuLoadPercentage = DoubleVar()
 gpuLoadText = StringVar()
 ttk.Progressbar(gpuLoadFrame, length=100, mode="determinate", variable=gpuLoadPercentage, orient="horizontal").grid(column=0, row=0)
-ttk.Label(gpuLoadFrame, textvariable=gpuLoadPercentage, font="TkDefaultFont 18 bold").grid(column=1, row=0)
+ttk.Label(gpuLoadFrame, textvariable=gpuLoadText, font="TkDefaultFont 18 bold").grid(column=1, row=0)
 
 gpuTempFrame = ttk.Labelframe(gpuFrame, text="Temperature")
 gpuTempFrame.grid(column=0, row=1, sticky=(E, W))
@@ -107,6 +114,24 @@ gpuPowerFrame = ttk.Labelframe(gpuFrame, text="Power")
 gpuPowerFrame.grid(column=0, row=3, sticky=(E, W))
 gpuPower = StringVar()
 ttk.Label(gpuPowerFrame, textvariable=gpuPower, font="TkDefaultFont 18 bold").grid(column=0, row=0)
+
+memoryFrame = ttk.Labelframe(frame, text="Memory")
+memoryFrame.grid(column=0, row=1, sticky=(N, E, W, S))
+memoryFrame.columnconfigure(0, weight=1)
+
+memoryLoadFrame = ttk.Labelframe(memoryFrame, text="Load")
+memoryLoadFrame.grid(column=0, row=0, sticky=(E, W))
+memoryLoadFrame.columnconfigure(0, weight=1)
+memoryLoadFrame.columnconfigure(1, weight=1)
+memoryHeader = StringVar(value="asdasd")
+ttk.Label(memoryLoadFrame, textvariable=memoryHeader, font="TkDefaultFont 26 bold").grid(column=0, row=0, columnspan=2)
+memoryLoadPercentage = DoubleVar()
+memoryLoadText = StringVar()
+ttk.Progressbar(memoryLoadFrame, length=100, mode="determinate", variable=memoryLoadPercentage, orient="horizontal").grid(column=0, row=1)
+ttk.Label(memoryLoadFrame, textvariable=memoryLoadText, font="TkDefaultFont 18 bold").grid(column=1, row=1)
+
+diskFrame = ttk.Labelframe(frame, text="Disks")
+diskFrame.grid(column=1, row=1, sticky=(N, E, W, S))
 
 for x in frame.winfo_children():
     x['padding'] = 10
@@ -157,19 +182,22 @@ def updateArray() -> None:
     #MEMORY ------------
     mem = pu.virtual_memory()
     array["memory"] = {
-        "total": round(mem.total / (1024.0 ** 3.0)),
+        "total": round(mem.total / (1024.0 ** 3.0), 1),
+        "used": round((mem.total - mem.available) / (1024.0 ** 3.0), 1),
         "loadPercentage": mem.percent
     }
 
     #STORAGE ----------
-    #for disk in pu.disk_partitions:
+    for disk in pu.disk_partitions():
+        array["disks"] = {}
     print(array)
 updateArray()
 
-#def setStatic() -> None:
-    #cpuName.set(array["cpu"]["name"])
-    #gpuName.set(array["gpu"]["name"])
-#setStatic()
+# def setStatic() -> None:
+    
+#     #cpuName.set(array["cpu"]["name"])
+#     #gpuName.set(array["gpu"]["name"])
+# setStatic()
 
 def setInfo() -> None:
     cpuTemp.set(f"{array["cpu"]["temp"]} °C") 
@@ -182,6 +210,9 @@ def setInfo() -> None:
     gpuClock.set(f"{array["gpu"]["clock"]} MHz")
     cpuPower.set(f"{array["cpu"]["power"]} W")
     gpuPower.set(f"{array["gpu"]["power"]} W")
+    memoryHeader.set(f"{array["memory"]["used"]}/{array["memory"]["total"]}GB")
+    memoryLoadPercentage.set(array["memory"]["loadPercentage"])
+    memoryLoadText.set(f"{array["memory"]["loadPercentage"]}%")
 
 def refresh() -> None:
     updateArray()
