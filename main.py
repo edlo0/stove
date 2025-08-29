@@ -43,10 +43,8 @@ noGPU = True
 
 main = Tk()
 main.title("Stove")
-#main.geometry("550x300")
 main.geometry("550x500")
 main.minsize(width=375, height=200)
-#main.maxsize(width=550, height=300)
 main.columnconfigure(0, weight=1)
 main.rowconfigure(0, weight=1)
 
@@ -123,8 +121,8 @@ memoryLoadFrame = ttk.Labelframe(memoryFrame, text="Load")
 memoryLoadFrame.grid(column=0, row=0, sticky=(E, W))
 memoryLoadFrame.columnconfigure(0, weight=1)
 memoryLoadFrame.columnconfigure(1, weight=1)
-memoryHeader = StringVar(value="asdasd")
-ttk.Label(memoryLoadFrame, textvariable=memoryHeader, font="TkDefaultFont 26 bold").grid(column=0, row=0, columnspan=2)
+memoryHeader = StringVar()
+ttk.Label(memoryLoadFrame, textvariable=memoryHeader, font="TkDefaultFont 24 bold").grid(column=0, row=0, columnspan=2)
 memoryLoadPercentage = DoubleVar()
 memoryLoadText = StringVar()
 ttk.Progressbar(memoryLoadFrame, length=100, mode="determinate", variable=memoryLoadPercentage, orient="horizontal").grid(column=0, row=1)
@@ -132,6 +130,31 @@ ttk.Label(memoryLoadFrame, textvariable=memoryLoadText, font="TkDefaultFont 18 b
 
 diskFrame = ttk.Labelframe(frame, text="Disks")
 diskFrame.grid(column=1, row=1, sticky=(N, E, W, S))
+diskFrame.columnconfigure(0, weight=1)
+
+diskEntries = []
+
+def setupDisks():
+    disks = pu.disk_partitions()
+    for x in range(len(disks)):
+        disk = disks[x]
+        diskDict = {
+            "device": disk.device,
+            "diskHeader": StringVar(),
+            "diskUsagePercentage": DoubleVar(),
+            "diskUsageText": StringVar()
+        }
+
+        diskFrame.rowconfigure(x, weight=1)
+        diskEntry = ttk.Labelframe(diskFrame, text=diskDict["device"])
+        diskEntry.grid(column=0, row=x, sticky=(N, E, W, S))
+        diskEntry.columnconfigure(0, weight=1)
+        diskEntry.columnconfigure(1, weight=1)
+        ttk.Label(diskEntry, textvariable=diskDict["diskHeader"], font="TkDefaultFont 18 bold").grid(column=0, row=0, columnspan=2)
+        ttk.Progressbar(diskEntry, length=100, mode="determinate", variable=diskDict["diskUsagePercentage"], orient="horizontal").grid(column=0, row=1)
+        ttk.Label(diskEntry, textvariable=diskDict["diskUsageText"], font="TkDefaultFont 18 bold").grid(column=1, row=1)
+        diskEntries.append(diskDict)
+setupDisks()
 
 for x in frame.winfo_children():
     x['padding'] = 10
@@ -186,18 +209,20 @@ def updateArray() -> None:
         "used": round((mem.total - mem.available) / (1024.0 ** 3.0), 1),
         "loadPercentage": mem.percent
     }
-
-    #STORAGE ----------
-    for disk in pu.disk_partitions():
-        array["disks"] = {}
     print(array)
 updateArray()
 
-# def setStatic() -> None:
-    
-#     #cpuName.set(array["cpu"]["name"])
-#     #gpuName.set(array["gpu"]["name"])
-# setStatic()
+def convertFromBytes(bytes: int) -> str:
+    if bytes > (1024.0 ** 4.0):
+        return f"{round(bytes / (1024.0 ** 4.0), 1)}TB"
+    elif bytes > (1024.0 ** 3.0):
+        return f"{round(bytes / (1024.0 ** 3.0))}GB"
+    elif bytes > (1024.0 ** 2.0):
+        return f"{round(bytes / (1024.0 ** 2.0))}MB"
+    elif bytes > 1024.0:
+        return f"{round(bytes / 1024.0)}KB"
+    else:
+        return f"{bytes}B"
 
 def setInfo() -> None:
     cpuTemp.set(f"{array["cpu"]["temp"]} °C") 
@@ -213,6 +238,11 @@ def setInfo() -> None:
     memoryHeader.set(f"{array["memory"]["used"]}/{array["memory"]["total"]}GB")
     memoryLoadPercentage.set(array["memory"]["loadPercentage"])
     memoryLoadText.set(f"{array["memory"]["loadPercentage"]}%")
+    for x in range(len(diskEntries)):
+        usage = pu.disk_usage(diskEntries[x]["device"])
+        diskEntries[x]["diskHeader"].set(f"{convertFromBytes(usage.used)}/{convertFromBytes(usage.total)}")
+        diskEntries[x]["diskUsagePercentage"].set(f"{usage.percent}")
+        diskEntries[x]["diskUsageText"].set(f"{usage.percent}%")
 
 def refresh() -> None:
     updateArray()
