@@ -214,7 +214,7 @@ updateArray()
 
 def convertFromBytes(bytes: int) -> str:
     if bytes > (1024.0 ** 4.0):
-        return f"{round(bytes / (1024.0 ** 4.0), 1)}TB"
+        return f"{round(bytes / (1024.0 ** 4.0), 2)}TB"
     elif bytes > (1024.0 ** 3.0):
         return f"{round(bytes / (1024.0 ** 3.0))}GB"
     elif bytes > (1024.0 ** 2.0):
