@@ -25,10 +25,6 @@ user.IsGpuEnabled = True
 user.Open()
 user.Accept(UpdateVisitor())
 
-for hardware in user.Hardware:
-    print(f"Hardware: {hardware.Name}")
-    for sensor in hardware.Sensors:
-        print(f"\tSensor: {sensor.Name}, value: {sensor.Value} TYPE: {sensor.SensorType}")
 array = {
     "cpu": {},
     "gpu": {
@@ -209,7 +205,6 @@ def updateArray() -> None:
         "used": round((mem.total - mem.available) / (1024.0 ** 3.0), 1),
         "loadPercentage": mem.percent
     }
-    print(array)
 updateArray()
 
 def convertFromBytes(bytes: int) -> str:
