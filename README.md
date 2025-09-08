@@ -1,4 +1,4 @@
-# Installation
+# Installation (Windows only)
 1. Install [.NET Framework 4.8.1](https://dotnet.microsoft.com/en-us/download/dotnet-framework/thank-you/net481-web-installer)
 2. Install [PawnIO driver](https://pawnio.eu/)
 3. Download latest release
