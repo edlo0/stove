@@ -28,9 +28,9 @@ user.Accept(UpdateVisitor())
 array = {
     "cpu": {},
     "gpu": {
-        "temp": "Error",
-        "loadPercentage": -1.0,
-        "clock": "Error"
+        "temp": "No GPU found",
+        "loadPercentage": 0.0,
+        "clock": "No GPU found"
     },
     "memory": {},
     "disks": {}
