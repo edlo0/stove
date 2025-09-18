@@ -4,6 +4,10 @@ from tkinter import *
 from tkinter import ttk
 import sv_ttk
 import clr
+import sys
+
+def exit():
+    sys.exit()
 
 clr.AddReference("LibreHardwareMonitorLib")
 from LibreHardwareMonitor import Hardware # type: ignore
@@ -22,17 +26,54 @@ class UpdateVisitor(Hardware.IVisitor): # from repo pyhardwaremonitor's example 
 user = Hardware.Computer()
 user.IsCpuEnabled = True
 user.IsGpuEnabled = True
-user.Open()
+try:
+    user.Open()
+except Exception as err:
+    errorWindow = Tk()
+    errorWindow.title("Stove")
+    errorWindow.geometry("400x150")
+    errorWindow.minsize(width=400, height=150)
+    errorWindow.maxsize(width=400, height=150)
+    errorWindow.columnconfigure(0, weight=1)
+    errorWindow.rowconfigure(0, weight=1)
+
+    errorFrame = Frame(errorWindow)
+    errorFrame.grid(column=0, row=0, sticky=(N, E, W, S))
+    errorFrame.columnconfigure(0, weight=1)
+    errorFrame.rowconfigure(0, weight=1)
+    errorFrame.rowconfigure(1, weight=1)
+    errorFrame.rowconfigure(2, weight=1)
+
+    errorText = Label(errorFrame, text="LibreHardwareMonitor failed to initialize. Did you open as administrator?")
+    errorText.grid(column=0, row=0)
+
+    errorTextBox = Label(errorFrame,text=err.args)
+    errorTextBox.grid(column=0, row=1)
+
+    Button(errorFrame, text="Close", command=quit).grid(column=0, row=2)
+    
+    errorWindow.mainloop()
+
 user.Accept(UpdateVisitor())
 
 array = {
-    "cpu": {},
-    "gpu": {
-        "temp": "No GPU found",
+    "cpu": {
+        "temp": "No CPU",
         "loadPercentage": 0.0,
-        "clock": "No GPU found"
+        "clock": "No CPU",
+        "power": "No CPU"
     },
-    "memory": {},
+    "gpu": {
+        "temp": "No GPU",
+        "loadPercentage": 0.0,
+        "clock": "No GPU",
+        "power": "No GPU"
+    },
+    "memory": {
+        "total": 0.0,
+        "used": 0.0,
+        "loadPercentage": 0.0
+    },
     "disks": {}
 }
 noGPU = True
@@ -134,6 +175,10 @@ def setupDisks():
     disks = pu.disk_partitions()
     for x in range(len(disks)):
         disk = disks[x]
+        try:
+            pu.disk_usage(disk.device)
+        except Exception as e:
+            continue
         diskDict = {
             "device": disk.device,
             "diskHeader": StringVar(),
@@ -221,15 +266,17 @@ def convertFromBytes(bytes: int) -> str:
 
 def setInfo() -> None:
     cpuTemp.set(f"{array["cpu"]["temp"]} °C") 
-    gpuTemp.set(f"{array["gpu"]["temp"]} °C")
     cpuLoadPercentage.set(array["cpu"]["loadPercentage"])
-    gpuLoadPercentage.set(array["gpu"]["loadPercentage"])
     cpuLoadText.set(f"{array["cpu"]["loadPercentage"]}%")
-    gpuLoadText.set(f"{array["gpu"]["loadPercentage"]}%")
     cpuClock.set(f"{array["cpu"]["clock"]} MHz")
-    gpuClock.set(f"{array["gpu"]["clock"]} MHz")
     cpuPower.set(f"{array["cpu"]["power"]} W")
+
+    gpuTemp.set(f"{array["gpu"]["temp"]} °C")
+    gpuLoadPercentage.set(array["gpu"]["loadPercentage"])
+    gpuLoadText.set(f"{array["gpu"]["loadPercentage"]}%")
+    gpuClock.set(f"{array["gpu"]["clock"]} MHz")
     gpuPower.set(f"{array["gpu"]["power"]} W")
+
     memoryHeader.set(f"{array["memory"]["used"]}/{array["memory"]["total"]}GB")
     memoryLoadPercentage.set(array["memory"]["loadPercentage"])
     memoryLoadText.set(f"{array["memory"]["loadPercentage"]}%")
