@@ -5,7 +5,8 @@ from tkinter import ttk
 
 def exit():
     sys.exit()
-def errorMessage(errMessage, errText):
+def errorMessage(errMessage, errText: str, canContinue: bool=False):
+    errText = str(errText).replace('\\\\', '\\')
     errorWindow = Tk()
     errorWindow.title("Stove")
     errorWindow.geometry("400x150")
@@ -16,20 +17,24 @@ def errorMessage(errMessage, errText):
     errorFrame = Frame(errorWindow)
     errorFrame.grid(column=0, row=0, sticky=(N, E, W, S))
     errorFrame.columnconfigure(0, weight=1)
+    errorFrame.columnconfigure(1, weight=1)
     errorFrame.rowconfigure(0, weight=1)
     errorFrame.rowconfigure(1, weight=1)
     errorFrame.rowconfigure(2, weight=1)
 
     errorText = Label(errorFrame, text=errMessage)
-    errorText.grid(column=0, row=0)
+    errorText.grid(column=0, row=0, columnspan=2)
 
     errorTextBox = Label(errorFrame,text=errText)
-    errorTextBox.grid(column=0, row=1)
+    errorTextBox.grid(column=0, row=1, columnspan=2)
 
-    Button(errorFrame, text="Close", command=quit).grid(column=0, row=2)
+    if canContinue == False:
+        Button(errorFrame, text="Quit", command=quit).grid(column=0, row=2, columnspan=2)
+    else:
+        Button(errorFrame, text="Quit", command=quit).grid(column=0, row=2)
+        Button(errorFrame, text="Continue", command=lambda: errorWindow.destroy()).grid(column=1, row=2)
     
     errorWindow.mainloop()
-
 try:
     import clr
     import psutil as pu
@@ -65,7 +70,7 @@ try:
     user.Open()
     user.Accept(UpdateVisitor())
 except Exception as err:
-    errorMessage("LibreHardwareMonitor failed to initialize. Did you open as admin?", err.args)
+    errorMessage("LibreHardwareMonitor failed to initialize. Did you run Stove as admin?", err.args)
 
 array = {
     "cpu": {
@@ -87,6 +92,7 @@ array = {
     },
     "disks": {}
 }
+noCPU = False
 noGPU = True
 
 main = Tk()
@@ -207,7 +213,7 @@ def setupDisks():
 try:
     setupDisks()
 except Exception as err:
-    errorMessage("Failed to display disks.", err.args)
+    errorMessage("Failed to display disks.", err.args, True)
 
 for x in frame.winfo_children():
     x['padding'] = 10
@@ -218,6 +224,8 @@ def updateSensors():
         user.Accept(UpdateVisitor())
         sleep(1)
 
+
+
 for i in user.Hardware:
     if "Gpu" in str(i.HardwareType):
         noGPU = False
@@ -226,19 +234,25 @@ def updateArray() -> None:
     #CPU ---------
     cpuHW = user.Hardware[0]
     array["cpu"]["loadPercentage"] = pu.cpu_percent(interval=None)
-    cpuClocks = []
-    for sensor in cpuHW.Sensors:
-        sName = str(sensor.Name)
-        sType = str(sensor.SensorType)
-        if (sName == "CPU Total" and sType == "Load"):
-            array["cpu"]["loadPercentage"] = round(sensor.Value, 1)
-        elif (sName == "Core Average" and sType == "Temperature"):
-            array["cpu"]["temp"] = round(sensor.Value, 1)
-        elif ("CPU Core" in sName and sType == "Clock"):
-            cpuClocks.append(sensor.Value)
-        elif (sName == "CPU Cores" and sType == "Power"):
-            array["cpu"]["power"] = round(sensor.Value, 1)
-    array["cpu"]["clock"] = round(sum(cpuClocks) / len(cpuClocks)) # average clocks
+    global noCPU
+    if noCPU == False:
+        try:
+            cpuClocks = []
+            for sensor in cpuHW.Sensors:
+                sName = str(sensor.Name)
+                sType = str(sensor.SensorType)
+                if (sName == "CPU Total" and sType == "Load"):
+                    array["cpu"]["loadPercentage"] = round(sensor.Value, 1)
+                elif (sName == "Core Average" and sType == "Temperature"):
+                    array["cpu"]["temp"] = round(sensor.Value, 1)
+                elif ("CPU Core" in sName and sType == "Clock"):
+                    cpuClocks.append(sensor.Value)
+                elif (sName == "CPU Cores" and sType == "Power"):
+                    array["cpu"]["power"] = round(sensor.Value, 1)
+            array["cpu"]["clock"] = round(sum(cpuClocks) / len(cpuClocks)) # average clocks
+        except Exception as err:
+            noCPU = True
+            errorMessage("CPU not detected. Did you run Stove as admin?", err.args, True)
 
     #GPU ----------
     if noGPU == False:
