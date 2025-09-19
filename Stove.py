@@ -28,12 +28,16 @@ def errorMessage(errMessage, errText: str, canContinue: bool=False):
     errorTextBox = Label(errorFrame,text=errText)
     errorTextBox.grid(column=0, row=1, columnspan=2)
 
+    def closeOut():
+        errorWindow.destroy()
+        errorWindow.quit()
+
     if canContinue == False:
         Button(errorFrame, text="Quit", command=quit).grid(column=0, row=2, columnspan=2)
     else:
         Button(errorFrame, text="Quit", command=quit).grid(column=0, row=2)
-        Button(errorFrame, text="Continue", command=lambda: errorWindow.destroy()).grid(column=1, row=2)
-    
+        Button(errorFrame, text="Continue", command=closeOut).grid(column=1, row=2)
+    print("asdfasdf")
     errorWindow.mainloop()
 try:
     import clr
@@ -224,8 +228,6 @@ def updateSensors():
         user.Accept(UpdateVisitor())
         sleep(1)
 
-
-
 for i in user.Hardware:
     if "Gpu" in str(i.HardwareType):
         noGPU = False
@@ -253,7 +255,6 @@ def updateArray() -> None:
         except Exception as err:
             noCPU = True
             errorMessage("CPU not detected. Did you run Stove as admin?", err.args, True)
-
     #GPU ----------
     if noGPU == False:
         gpuHW = user.Hardware[1]
@@ -276,7 +277,6 @@ def updateArray() -> None:
         "used": round((mem.total - mem.available) / (1024.0 ** 3.0), 1),
         "loadPercentage": mem.percent
     }
-updateArray()
 
 def convertFromBytes(bytes: int) -> str:
     if bytes > (1024.0 ** 4.0):
