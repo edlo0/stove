@@ -1,39 +1,15 @@
+import sys
 from time import sleep
-import psutil as pu
 from tkinter import *
 from tkinter import ttk
-import sv_ttk
-import clr
-import sys
 
 def exit():
     sys.exit()
-
-clr.AddReference("LibreHardwareMonitorLib")
-from LibreHardwareMonitor import Hardware # type: ignore
-class UpdateVisitor(Hardware.IVisitor): # from repo pyhardwaremonitor's example code
-    __namespace__ = "Stove"
-    def VisitComputer(self, computer):
-        computer.Traverse(self)
-    def VisitHardware(self, hardware):
-        hardware.Update()
-        for subHardware in hardware.SubHardware:
-            subHardware.Update()
-    def VisitParameter(self, parameter):
-        pass
-    def VisitSensor(self, sensor):
-        pass
-user = Hardware.Computer()
-user.IsCpuEnabled = True
-user.IsGpuEnabled = True
-try:
-    user.Open()
-except Exception as err:
+def errorMessage(errMessage, errText):
     errorWindow = Tk()
     errorWindow.title("Stove")
     errorWindow.geometry("400x150")
     errorWindow.minsize(width=400, height=150)
-    errorWindow.maxsize(width=400, height=150)
     errorWindow.columnconfigure(0, weight=1)
     errorWindow.rowconfigure(0, weight=1)
 
@@ -44,17 +20,52 @@ except Exception as err:
     errorFrame.rowconfigure(1, weight=1)
     errorFrame.rowconfigure(2, weight=1)
 
-    errorText = Label(errorFrame, text="LibreHardwareMonitor failed to initialize. Did you open as administrator?")
+    errorText = Label(errorFrame, text=errMessage)
     errorText.grid(column=0, row=0)
 
-    errorTextBox = Label(errorFrame,text=err.args)
+    errorTextBox = Label(errorFrame,text=errText)
     errorTextBox.grid(column=0, row=1)
 
     Button(errorFrame, text="Close", command=quit).grid(column=0, row=2)
     
     errorWindow.mainloop()
 
-user.Accept(UpdateVisitor())
+try:
+    import clr
+    import psutil as pu
+    import sv_ttk
+except ImportError as err:
+    errorMessage("An import failed.", err.args)
+except Exception as err:
+    errorMessage("Unexpected error.", err.args)
+
+try:
+    clr.AddReference("LibreHardwareMonitorLib")
+    from LibreHardwareMonitor import Hardware # type: ignore
+except Exception as err:
+    errorMessage("LibreHardwareMonitorLib.dll failed to import.", err.args)
+
+
+try:
+    class UpdateVisitor(Hardware.IVisitor): # from repo pyhardwaremonitor's example code
+        __namespace__ = "Stove"
+        def VisitComputer(self, computer):
+            computer.Traverse(self)
+        def VisitHardware(self, hardware):
+            hardware.Update()
+            for subHardware in hardware.SubHardware:
+                subHardware.Update()
+        def VisitParameter(self, parameter):
+            pass
+        def VisitSensor(self, sensor):
+            pass
+    user = Hardware.Computer()
+    user.IsCpuEnabled = True
+    user.IsGpuEnabled = True
+    user.Open()
+    user.Accept(UpdateVisitor())
+except Exception as err:
+    errorMessage("LibreHardwareMonitor failed to initialize. Did you open as admin?", err.args)
 
 array = {
     "cpu": {
@@ -91,8 +102,6 @@ frame.columnconfigure(0, weight=1)
 frame.columnconfigure(1, weight=1)
 frame.rowconfigure(0, weight=1)
 frame.rowconfigure(1, weight=1)
-
-# 10/10 variable names
 
 cpuFrame = ttk.Labelframe(frame, text="CPU")
 cpuFrame.grid(column=0, row=0, sticky=(N, E, W, S))
@@ -195,7 +204,10 @@ def setupDisks():
         ttk.Progressbar(diskEntry, length=100, mode="determinate", variable=diskDict["diskUsagePercentage"], orient="horizontal").grid(column=0, row=1)
         ttk.Label(diskEntry, textvariable=diskDict["diskUsageText"], font="TkDefaultFont 18 bold").grid(column=1, row=1)
         diskEntries.append(diskDict)
-setupDisks()
+try:
+    setupDisks()
+except Exception as err:
+    errorMessage("Failed to display disks.", err.args)
 
 for x in frame.winfo_children():
     x['padding'] = 10
