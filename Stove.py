@@ -32,11 +32,11 @@ def errorMessage(errMessage, errText: str, canContinue: bool=False):
         errorWindow.destroy()
         errorWindow.quit()
 
-    if canContinue == False:
-        Button(errorFrame, text="Quit", command=quit).grid(column=0, row=2, columnspan=2)
-    else:
+    if canContinue == True:
         Button(errorFrame, text="Quit", command=quit).grid(column=0, row=2)
         Button(errorFrame, text="Continue", command=closeOut).grid(column=1, row=2)
+    else:
+        Button(errorFrame, text="Quit", command=quit).grid(column=0, row=2, columnspan=2)
     print("asdfasdf")
     errorWindow.mainloop()
 try:
