@@ -9,4 +9,6 @@ A lightweight system monitor using Tkinter, [LibreHardwareMonitor fork using Paw
 
 Tkinter styled with [Sun-Valley-ttk-theme](https://github.com/rdbende/Sun-Valley-ttk-theme)
 
+Releases compiled with [Nuitka](https://github.com/Nuitka/Nuitka)
+
 https://github.com/user-attachments/assets/75df8df5-626e-4593-bade-d2449abd27c9
